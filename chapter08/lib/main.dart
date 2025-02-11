@@ -36,7 +36,13 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: Center(),
+      body: Center(
+        child: Image.network(
+          'https://ogre.natalie.mu/artist/106738/20180810/KUZIRA_art201805.jpg?imwidth=400&imdensity=1',
+          width: 400,
+          height: 400,
+        ),
+      ),
     );
   }
 }
