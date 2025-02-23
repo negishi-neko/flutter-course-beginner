@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const MyApp());
@@ -30,33 +32,63 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // 変数が宣言時ではなく使われるタイミングで初期化される
-  late final WebViewController controller;
+  TextEditingController controller = TextEditingController();
+  List<String> items = [];
+  String errorMessage = '';
 
-  @override
-  void initState() {
-    super.initState();
-    // loadRequestの結果ではなく、カスケード演算子前のオブジェクトが返される
-    // 以下と同義
-    // controller = WebViewController();
-    // controller.loadRequest(Uri.parse('https://nzigen.com'));
-    controller = WebViewController()
-      ..loadRequest(Uri.parse('https://www.kuzirawkmgifu.com/'));
+  Future<void> loadZipCode(String zipCode) async {
+    setState(() {
+      errorMessage = 'API レスポンス待ち'; // 待機メッセージをセット
+    });
+    final response = await http.get(
+        Uri.parse('https://zipcloud.ibsnet.co.jp/api/search?zipcode=$zipCode'));
+    if (response.statusCode != 200) {
+      // 失敗
+      return;
+    }
+    // 成功
+    final body = json.decode(response.body) as Map<String, dynamic>;
+    final results = (body['results'] ?? []) as List<dynamic>;
+
+    if (results.isEmpty) {
+      setState(() {
+        errorMessage = 'そのような郵便番号はありません';
+      });
+    } else {
+      setState(() {
+        errorMessage = ''; // エラーメッセージをクリア
+        items = results
+            .map((result) =>
+                "${result['address1']}${result['address2']}${result['address3']}")
+            .toList(growable: false);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: SafeArea(
-      child: WebViewWidget(controller: controller),
-    )
-        // Center(
-        //   child: Image.network(
-        //     'https://ogre.natalie.mu/artist/106738/20180810/KUZIRA_art201805.jpg?imwidth=400&imdensity=1',
-        //     width: 400,
-        //     height: 400,
-        //   ),
-        // ),
-        );
+      appBar: AppBar(
+        title: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          onChanged: (value) {
+            if (value.isNotEmpty) {
+              loadZipCode(value);
+            }
+          },
+        ),
+      ),
+      body: ListView.builder(
+        itemBuilder: (context, index) {
+          if (errorMessage.isNotEmpty) {
+            return ListTile(title: Text(errorMessage));
+          } else {
+            return ListTile(title: Text(items[index]));
+          }
+        },
+        itemCount: items.length,
+      ),
+    );
   }
 }
