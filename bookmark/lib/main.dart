@@ -31,31 +31,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<String> items = ['KUZIRA', 'Flutter', 'Google', 'Youtube'];
-  late List<WebViewController> _controllers;
-
-  @override
-  void initState() {
-    super.initState();
-    _controllers = [
-      WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..loadRequest(Uri.parse('https://www.kuzirawkmgifu.com')),
-      WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..loadRequest(Uri.parse('https://flutter.dev')),
-      WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..loadRequest(Uri.parse('https://www.google.com')),
-      WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..loadRequest(Uri.parse('https://www.youtube.com')),
-    ];
-  }
+  // Tuple を複数管理する List
+  final List<({String title, String url})> items = [
+    (title: 'KUZIRA', url: 'https://www.kuzirawkmgifu.com'),
+    (title: 'Flutter', url: 'https://flutter.dev'),
+    (title: 'Google', url: 'https://www.google.com'),
+    (title: 'Youtube', url: 'https://www.youtube.com')
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -67,14 +49,18 @@ class _MyHomePageState extends State<MyHomePage> {
         child: ListView.builder(
           itemCount: items.length,
           itemBuilder: (context, index) {
+            final item = items[index];
+            final title = item.title;
+            final url = item.url;
             return ListTile(
-              title: Text(items[index]),
+              title: Text(title),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        WebViewWidget(controller: _controllers[index]),
+                    builder: (context) {
+                      return WebViewPage(title: title, url: url);
+                    },
                   ),
                 );
               },
@@ -82,6 +68,44 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         ),
       ),
+    );
+  }
+}
+
+class WebViewPage extends StatefulWidget {
+  const WebViewPage({required this.title, required this.url, super.key});
+  final String title;
+  final String url;
+
+  @override
+  State<WebViewPage> createState() => _WebViewPageState();
+}
+
+class _WebViewPageState extends State<WebViewPage> {
+  late final WebViewController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(
+        Uri.parse(widget.url),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+          title: Text(widget.title),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          )),
+      body: SafeArea(child: WebViewWidget(controller: controller)),
     );
   }
 }
